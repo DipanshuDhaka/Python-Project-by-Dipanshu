@@ -1,0 +1,128 @@
+# Basic info
+print(df.info())
+print(df.describe(include='all'))
+
+# Drop columns with >50% missing and then drop remaining rows with any NaNs
+df = df.drop(columns=df.columns[df.isnull().mean() > 0.5])
+df = df.dropna()
+
+# Handle DateTime
+if 'DateTime' in df.columns:
+    df['DateTime'] = pd.to_datetime(df['DateTime'], errors='coerce')
+    df = df.dropna(subset=['DateTime'])
+    df['DateTime'] = df['DateTime'].dt.tz_localize(None)
+    df['Month'] = df['DateTime'].dt.to_period('M')
+    df['DayOfWeek'] = df['DateTime'].dt.day_name()
+    df['Hour'] = df['DateTime'].dt.hour
+else:
+    print("Column 'DateTime' not found.")
+
+# 1. Correlation Heatmap
+plt.figure(figsize=(12, 8))
+sns.heatmap(df.select_dtypes(include='number').corr(), annot=True, cmap='YlGnBu')
+plt.title("Correlation Heatmap")
+plt.tight_layout()
+plt.savefig("correlation_heatmap.png")
+plt.show()
+
+# 2. Monthly Crash Frequency
+if 'Month' in df.columns:
+    monthly_counts = df.groupby('Month').size()
+    fig, ax = plt.subplots(figsize=(10, 5))
+    monthly_counts.plot(kind='line', marker='o', color='darkgreen', ax=ax)
+    ax.set_title("Monthly Crash Frequency")
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Number of Crashes")
+    ax.grid(True)
+    plt.tight_layout()
+    plt.savefig("monthly_crashes.png")
+    plt.show()
+
+# 3. Injury Severity - Pie Chart
+if 'Injuryseverity' in df.columns:
+    severity_counts = df['Injuryseverity'].value_counts()
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.pie(severity_counts, labels=severity_counts.index, autopct='%1.1f%%',
+           colors=sns.color_palette("Set3"))
+    ax.set_title("Crash Severity Distribution")
+    plt.tight_layout()
+    plt.savefig("crash_severity.png")
+    plt.show()
+
+# 4. Environmental Factors - Horizontal Bar Chart
+env_palettes = ['Spectral', 'coolwarm', 'flare']
+for idx, column in enumerate(['Weather', 'Lightcondition', 'SurfaceCondition']):
+    if column in df.columns and 'Injuryseverity' in df.columns:
+        cross_tab = pd.crosstab(df[column], df['Injuryseverity'])
+        fig, ax = plt.subplots(figsize=(10, 6))
+        cross_tab.plot(kind='barh', stacked=True, colormap=env_palettes[idx % len(env_palettes)], ax=ax)
+        ax.set_title(f'Crash Severity by {column}')
+        ax.set_xlabel("Count")
+        plt.tight_layout()
+        plt.savefig(f'crash_by_{column}.png')
+        plt.show()
+
+# 5. Alcohol & Drug Influence - Stacked Bar Chart
+inf_palettes = ['Purples', 'YlOrRd']
+for idx, column in enumerate(['AlcoholUse_Drv1', 'DrugUse_Drv1']):
+    if column in df.columns and 'Injuryseverity' in df.columns:
+        ctab = pd.crosstab(df[column], df['Injuryseverity'])
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ctab.plot(kind='bar', stacked=True, colormap=inf_palettes[idx % len(inf_palettes)], ax=ax)
+        ax.set_title(f'{column} vs Injury Severity')
+        ax.set_xlabel(column)
+        ax.set_ylabel("Count")
+        plt.tight_layout()
+        plt.savefig(f'{column}_vs_severity.png')
+        plt.show()
+
+# 6. Collision Types - Horizontal Bar
+if 'Collisionmanner' in df.columns:
+    collision_counts = df['Collisionmanner'].value_counts()
+    fig, ax = plt.subplots(figsize=(8, 5))
+    collision_counts.plot(kind='barh', color='orchid', ax=ax)
+    ax.set_title("Most Common Collision Types")
+    ax.set_xlabel("Number of Crashes")
+    plt.tight_layout()
+    plt.savefig("collision_types.png")
+    plt.show()
+
+# 7. Violations - Lollipop Chart
+if 'Violation1_Drv1' in df.columns:
+    top_violations = df['Violation1_Drv1'].value_counts().head(10)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.hlines(y=top_violations.index, xmin=0, xmax=top_violations.values, color='coral')
+    ax.plot(top_violations.values, top_violations.index, "o", color='darkred')
+    ax.set_title("Top 10 Violations by Driver 1")
+    ax.set_xlabel("Count")
+    plt.tight_layout()
+    plt.savefig("top_driver1_violations.png")
+    plt.show()
+
+# 8. Crash by Day of the Week
+if 'DayOfWeek' in df.columns:
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.countplot(data=df, x='DayOfWeek',
+                  order=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                  palette='viridis', ax=ax)
+    ax.set_title("Crashes by Day of the Week")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+    plt.tight_layout()
+    plt.savefig("crash_by_day.png")
+    plt.show()
+
+# 9. Crash by Hour of Day - Area Chart
+if 'Hour' in df.columns:
+    hour_counts = df['Hour'].value_counts().sort_index()
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.fill_between(hour_counts.index, hour_counts.values, color='skyblue', alpha=0.5)
+    ax.plot(hour_counts.index, hour_counts.values, marker='o', color='navy')
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_title("Crashes by Hour of the Day")
+    ax.set_xlabel("Hour")
+    ax.set_ylabel("Number of Crashes")
+    plt.tight_layout()
+    plt.savefig("crash_by_hour.png")
+    plt.show()
+
+print("✅ All charts generated, saved, and displayed with unique colors.")
