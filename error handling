@@ -1,0 +1,2 @@
+sns.set(style="whitegrid")
+warnings.filterwarnings("ignore")
