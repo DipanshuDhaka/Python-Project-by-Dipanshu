@@ -1,0 +1,19 @@
+/-------df = pd.read_csv("C:/Users/Hp/Downloads/1.08_Crash_Data_Report_(detail).csv")-------/
+
+# 1. Read a File (Handling FileNotFoundError)
+try:  
+    file = open("data.txt", "r"); print(file.read()); file.close()  
+except FileNotFoundError:  
+    print("❌ File Not Found!")
+
+# 2. Write Data to a New File (Handling Error)
+try:  
+    file = open("output.txt", "w"); file.write("This is File Handling Example."); file.close(); print("✅ Data Written")  
+except Exception as e:  
+    print("Error:", e)
+
+# 3. Append Data to Existing File (Add Data Safely)
+try:  
+    with open("output.txt", "a") as file: file.write("\nThis is Appended Data."); print("✅ Data Appended")  
+except Exception as e:  
+    print("Error:", e)
